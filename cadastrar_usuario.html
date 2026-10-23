@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Cadastrar Usuário - Sala de Leitura</title>
+</head>
+<body class="tela-centralizada">
+
+    <!-- Caixa externa para alinhar o título fora do cartão branco -->
+    <div style="width: 100%; max-width: 500px;">
+        
+        <h1 style="font-size: 26px; margin-bottom: 20px; color: #111;">Cadastrar Novo Usuário do Sistema</h1>
+        
+        <div class="cartao">
+            
+            <h2 style="font-size: 16px; color: #1e3a8a; margin-bottom: 25px; text-transform: uppercase;">NOVO USUÁRIO</h2>
+
+            <form action="/cadastrar-usuario" method="POST" onsubmit="return validarSenhas()">
+                
+                <div class="grupo-input">
+                    <label for="nome_completo">Nome Completo</label>
+                    <input type="text" id="nome_completo" name="nome_completo" required>
+                </div>
+
+                <div class="grupo-input">
+                    <label for="usuario">Usuário</label>
+                    <input type="text" id="usuario" name="usuario" required>
+                </div>
+
+                <div class="grupo-input">
+                    <label for="senha">Senha</label>
+                    <input type="password" id="senha" name="senha" required>
+                </div>
+
+                <div class="grupo-input">
+                    <label for="confirmar_senha">Confirmar Senha</label>
+                    <input type="password" id="confirmar_senha" required>
+                </div>
+
+                <!-- Botões Alinhados à Direita -->
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 30px;">
+                    <a href="principal.html" style="padding: 10px 20px; border: 1px solid #ccc; border-radius: 25px; text-decoration: none; color: #555; font-weight: bold;">Cancelar</a>
+                    <button type="submit" class="btn-azul" style="width: auto; padding: 10px 25px;">Salvar Usuário</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function validarSenhas() {
+            const senha = document.getElementById('senha').value;
+            const confirmarSenha = document.getElementById('confirmar_senha').value;
+
+            if (senha !== confirmarSenha) {
+                alert('As senhas digitadas não coincidem. Por favor, verifique e tente novamente.');
+                return false;
+            }
+            return true;
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Sala de Leitura - Painel Principal</title>
+    <style>
+        .grid-botoes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .card-menu {
+            background-color: #e0edff;
+            color: #1e3a8a;
+            border-radius: 8px;
+            padding: 14px 10px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: background-color 0.2s ease-in-out;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .card-menu:hover {
+            background-color: #d0e2ff;
+        }
+        /* Modal Estilizado */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-conteudo {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            width: 90%;
+            max-width: 480px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        /* Botão pequeno que preserva o layout da tabela */
+        .btn-info-pequeno {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 2px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-info-pequeno:hover {
+            background: #1d4ed8;
+        }
+        .status-container {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 24px;
+        }
+    </style>
+</head>
+<body class="tela-painel">
+
+    <!-- Cabeçalho com Botão de Sair -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 32px;">📚</span>
+            <h1 style="font-size: 28px; margin: 0;">Sala de Leitura</h1>
+        </div>
+        <a href="index.html" class="btn-cinza" style="width: auto; padding: 8px 18px; text-decoration: none; font-size: 14px; display: inline-flex; align-items: center; gap: 6px;">🚪 Sair</a>
+    </div>
+
+    <!-- Cartão de Pesquisa e Alternador de Abas -->
+    <div class="cartao" style="margin-bottom: 20px;">
+        <div style="display: flex; gap: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; margin-bottom: 15px;">
+            <span id="aba-livro" onclick="mudarAba('livro')" style="cursor: pointer; font-weight: bold; color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 8px;">Consultar por Livro / Código</span>
+            <span id="aba-aluno" onclick="mudarAba('aluno')" style="cursor: pointer; color: #6b7280; padding-bottom: 8px;">Consultar por Aluno / Matrícula</span>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="campo-busca" placeholder="Digite o título ou código do livro..." style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px;">
+            <button onclick="buscarData()" class="btn-azul" style="width: auto; padding: 10px 25px;">PESQUISAR</button>
+        </div>
+    </div>
+
+    <!-- Botões de Navegação Rápida -->
+    <div class="grid-botoes">
+        <a href="emprestimo.html" class="card-menu">📖 Registrar Empréstimo</a>
+        <a href="devolucao.html" class="card-menu">↩️ Registrar Devolução</a>
+        <a href="cadastrar_aluno.html" class="card-menu">👤 + Cadastrar Novo Aluno</a>
+        <a href="cadastrar_livro.html" class="card-menu">📘 + Cadastrar Novo Livro</a>
+        <a href="cadastrar_usuario.html" class="card-menu">⚙️ + Cadastrar Novo Usuário</a>
+    </div>
+
+    <!-- Tabela Dinâmica de Resultados -->
+    <div class="cartao">
+        <div class="tabela-container" style="box-shadow: none; padding: 0; margin-top: 0;">
+            <table>
+                <thead id="cabecalho-tabela">
+                    <!-- Preenchido via JS -->
+                </thead>
+                <tbody id="corpo-tabela">
+                    <!-- Preenchido via JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Popup para Detalhes do Empréstimo -->
+    <div id="modal-detalhes" class="modal-overlay">
+        <div class="modal-conteudo">
+            <h2 style="margin-top: 0; font-size: 20px; color: #1e3a8a; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">📋 Informações do Empréstimo</h2>
+            <div id="conteudo-modal" style="margin: 20px 0; line-height: 1.6; font-size: 15px;">
+                Carregando...
+            </div>
+            <div style="text-align: right;">
+                <button onclick="fecharModal()" class="btn-azul" style="width: auto; padding: 8px 22px;">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let abaAtual = 'livro';
+        let dadosLivros = [];
+        let dadosLeitores = [];
+
+        function mudarAba(tipo) {
+            abaAtual = tipo;
+            const abaLivro = document.getElementById('aba-livro');
+            const abaAluno = document.getElementById('aba-aluno');
+            const campoBusca = document.getElementById('campo-busca');
+
+            if (tipo === 'livro') {
+                abaLivro.style.color = '#2563eb';
+                abaLivro.style.fontWeight = 'bold';
+                abaLivro.style.borderBottom = '2px solid #2563eb';
+
+                abaAluno.style.color = '#6b7280';
+                abaAluno.style.fontWeight = 'normal';
+                abaAluno.style.borderBottom = 'none';
+
+                campoBusca.placeholder = 'Digite o título ou código do livro...';
+                carregarLivros();
+            } else {
+                abaAluno.style.color = '#2563eb';
+                abaAluno.style.fontWeight = 'bold';
+                abaAluno.style.borderBottom = 'none';
+
+                abaLivro.style.color = '#6b7280';
+                abaLivro.style.fontWeight = 'normal';
+                abaLivro.style.borderBottom = 'none';
+
+                campoBusca.placeholder = 'Digite o nome do aluno ou a matrícula...';
+                carregarLeitores();
+            }
+        }
+
+        function carregarLivros() {
+            fetch('/api/livros')
+                .then(res => res.json())
+                .then(data => {
+                    dadosLivros = data;
+                    renderizarTabela();
+                })
+                .catch(err => console.error('Erro ao carregar livros:', err));
+        }
+
+        function carregarLeitores() {
+            fetch('/api/leitores')
+                .then(res => res.json())
+                .then(data => {
+                    dadosLeitores = data;
+                    renderizarTabela();
+                })
+                .catch(err => console.error('Erro ao carregar leitores:', err));
+        }
+
+        function buscarData() {
+            renderizarTabela();
+        }
+
+        function renderizarTabela() {
+            const termo = document.getElementById('campo-busca').value.toLowerCase().trim();
+            const cabecalho = document.getElementById('cabecalho-tabela');
+            const corpo = document.getElementById('corpo-tabela');
+            const hojeIso = new Date().toISOString().split('T')[0];
+
+            if (abaAtual === 'livro') {
+                cabecalho.innerHTML = `
+                    <tr>
+                        <th>Livro</th>
+                        <th>Autor</th>
+                        <th>Código</th>
+                        <th>Status</th>
+                    </tr>
+                `;
+
+                const filtrados = dadosLivros.filter(l => 
+                    (l.titulo && l.titulo.toLowerCase().includes(termo)) ||
+                    (l.codigo && l.codigo.toLowerCase().includes(termo)) ||
+                    (l.autor && l.autor.toLowerCase().includes(termo))
+                );
+
+                corpo.innerHTML = '';
+                if (filtrados.length === 0) {
+                    corpo.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #888;">Nenhum livro encontrado.</td></tr>';
+                    return;
+                }
+
+                filtrados.forEach(l => {
+                    const tr = document.createElement('tr');
+                    
+                    let statusTexto = '';
+                    if (l.status === 'Emprestado') {
+                        const estaAtrasado = l.data_limite && l.data_limite < hojeIso;
+                        if (estaAtrasado) {
+                            statusTexto = `<span style="color: #dc2626; font-weight: bold;">Emprestado (Atrasado)</span>`;
+                        } else {
+                            statusTexto = `<span style="color: #d97706; font-weight: bold;">Emprestado</span>`;
+                        }
+                    } else {
+                        statusTexto = `<span style="color: #16a34a; font-weight: bold;">${l.status || 'Disponível'}</span>`;
+                    }
+                    
+                    let statusHtml = `<div class="status-container">${statusTexto}`;
+                    if (l.status === 'Emprestado') {
+                        statusHtml += `<button onclick="abrirModalDetalhes('${l.codigo}')" class="btn-info-pequeno" title="Ver Leitor">ℹ️</button>`;
+                    }
+                    statusHtml += `</div>`;
+
+                    tr.innerHTML = `
+                        <td>${l.titulo || '-'}</td>
+                        <td>${l.autor || '-'}</td>
+                        <td>${l.codigo || '-'}</td>
+                        <td>${statusHtml}</td>
+                    `;
+                    corpo.appendChild(tr);
+                });
+
+            } else {
+                cabecalho.innerHTML = `
+                    <tr>
+                        <th>Matrícula</th>
+                        <th>Nome Completo</th>
+                        <th>Tipo</th>
+                        <th>Série</th>
+                        <th>Telefone</th>
+                    </tr>
+                `;
+
+                const filtrados = dadosLeitores.filter(l => 
+                    (l.nome && l.nome.toLowerCase().includes(termo)) ||
+                    (l.matricula && l.matricula.toLowerCase().includes(termo)) ||
+                    (l.turma && l.turma.toLowerCase().includes(termo))
+                );
+
+                corpo.innerHTML = '';
+                if (filtrados.length === 0) {
+                    corpo.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #888;">Nenhum leitor encontrado.</td></tr>';
+                    return;
+                }
+
+                filtrados.forEach(l => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${l.matricula || '-'}</td>
+                        <td>${l.nome || '-'}</td>
+                        <td>${l.tipo || '-'}</td>
+                        <td>${l.turma || '-'}</td>
+                        <td>${l.telefone || '-'}</td>
+                    `;
+                    corpo.appendChild(tr);
+                });
+            }
+        }
+
+        // Funções do Modal Pop-up
+        function abrirModalDetalhes(codigo) {
+            const modal = document.getElementById('modal-detalhes');
+            const conteudo = document.getElementById('conteudo-modal');
+            const hojeIso = new Date().toISOString().split('T')[0];
+
+            modal.style.display = 'flex';
+            conteudo.innerHTML = '<p>Carregando informações do empréstimo...</p>';
+
+            fetch(`/api/detalhes-emprestimo?codigo=${encodeURIComponent(codigo)}`)
+                .then(res => res.json())
+                .then(d => {
+                    if (!d || !d.nome) {
+                        conteudo.innerHTML = '<p style="color: #ef4444;">Não foi possível encontrar o registro do empréstimo.</p>';
+                        return;
+                    }
+
+                    const formatarData = (dt) => {
+                        if (!dt) return '-';
+                        const partes = dt.split('-');
+                        return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : dt;
+                    };
+
+                    const estaAtrasado = d.data_limite && d.data_limite < hojeIso;
+                    const corDevolucao = estaAtrasado ? '#dc2626' : '#d97706';
+                    const avisoAtraso = estaAtrasado ? ' <span style="color: #dc2626; font-weight: bold;">(⚠️ Atrasado)</span>' : '';
+
+                    conteudo.innerHTML = `
+                        <p style="margin: 6px 0;"><strong>👤 Leitor:</strong> ${d.nome}</p>
+                        <p style="margin: 6px 0;"><strong>🆔 Matrícula/RA:</strong> ${d.matricula || '-'}</p>
+                        <p style="margin: 6px 0;"><strong>🏫 Série/Turma:</strong> ${d.turma || '-'}</p>
+                        <p style="margin: 6px 0;"><strong>📞 Telefone:</strong> ${d.telefone || '-'}</p>
+                        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 12px 0;">
+                        <p style="margin: 6px 0;"><strong>📅 Data do Empréstimo:</strong> ${formatarData(d.data_emprestimo)}</p>
+                        <p style="margin: 6px 0;"><strong>⏳ Previsão de Devolução:</strong> <span style="color: ${corDevolucao}; font-weight: bold;">${formatarData(d.data_limite)}</span>${avisoAtraso}</p>
+                        ${d.observacoes ? `<p style="margin: 6px 0;"><strong>📝 Observações:</strong> ${d.observacoes}</p>` : ''}
+                    `;
+                })
+                .catch(err => {
+                    console.error(err);
+                    conteudo.innerHTML = '<p style="color: #ef4444;">Erro ao carregar dados do empréstimo.</p>';
+                });
+        }
+
+        function fecharModal() {
+            document.getElementById('modal-detalhes').style.display = 'none';
+        }
+
+        document.getElementById('campo-busca').addEventListener('keyup', () => {
+            renderizarTabela();
+        });
+
+        carregarLivros();
+    </script>
+</body>
+</html>

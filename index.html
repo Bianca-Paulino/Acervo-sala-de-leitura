@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Login - Sala de Leitura</title>
+</head>
+<body class="tela-centralizada">
+
+    <div class="cartao cartao-pequeno">
+        
+        <h1>Acervo Sala de Leitura</h1>
+        <p>Faça login para acessar o sistema</p>
+
+        <form action="/login" method="POST">
+            
+            <div class="grupo-input">
+                <label for="usuario">Usuário</label>
+                <input type="text" id="usuario" name="usuario" placeholder="Digite seu usuário" required autocomplete="off">
+            </div>
+
+            <div class="grupo-input">
+                <label for="senha">Senha</label>
+                <input type="password" id="senha" name="senha" placeholder="Digite sua senha" required>
+            </div>
+
+            <!-- Caixa de Alerta de Erro -->
+            <div id="alerta-erro" class="alerta-erro" style="display: none; margin-bottom: 15px;">
+                Acesso Negado: Usuário ou senha incorretos
+            </div>
+
+            <!-- Caixa de Alerta de Sucesso na Redefinição -->
+            <div id="alerta-sucesso" style="display: none; color: #15803d; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px; border-radius: 6px; font-size: 13px; margin-bottom: 15px; text-align: center;">
+                ✅ Senha redefinida com sucesso! Faça login com a nova senha.
+            </div>
+
+            <button type="submit" class="btn-azul">ENTRAR</button>
+        </form>
+
+        <a href="recuperar_senha.html" class="link-rodape">Esqueceu a senha?</a>
+
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('erro')) {
+            document.getElementById('alerta-erro').style.display = 'block';
+        }
+        if (urlParams.has('sucesso_senha')) {
+            document.getElementById('alerta-sucesso').style.display = 'block';
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Registrar Empréstimo - Sala de Leitura</title>
+    <style>
+        .container-busca {
+            position: relative;
+        }
+        .lista-sugestoes {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-top: none;
+            max-height: 180px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-radius: 0 0 6px 6px;
+            display: none;
+        }
+        .item-sugestao {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+        }
+        .item-sugestao:hover {
+            background-color: #eff6ff;
+            color: #1d4ed8;
+        }
+    </style>
+</head>
+<body class="tela-painel">
+
+    <div class="cartao" style="max-width: 700px; margin: 0 auto;">
+        <h1 style="font-size: 22px; margin-bottom: 20px;">📖 Registrar Empréstimo de Livro</h1>
+
+        <form action="/cadastrar-emprestimo" method="POST" onsubmit="return validarFormulario()">
+            
+            <!-- Campo de Pesquisa do Leitor / Aluno -->
+            <div class="grupo-input container-busca">
+                <label for="busca_aluno">Buscar Leitor / Aluno</label>
+                <input type="text" id="busca_aluno" placeholder="Digite o nome ou a matrícula do leitor..." autocomplete="off" required>
+                <!-- Campo oculto enviado ao servidor -->
+                <input type="hidden" id="matricula_aluno" name="matricula_aluno" required>
+                <div id="lista_alunos" class="lista-sugestoes"></div>
+            </div>
+
+            <!-- Campo de Pesquisa do Livro (Apenas Disponíveis) -->
+            <div class="grupo-input container-busca">
+                <label for="busca_livro">Buscar Livro (Disponíveis)</label>
+                <input type="text" id="busca_livro" placeholder="Digite o título ou o código do livro..." autocomplete="off" required>
+                <!-- Campo oculto enviado ao servidor -->
+                <input type="hidden" id="codigo_livro" name="codigo_livro" required>
+                <div id="lista_livros" class="lista-sugestoes"></div>
+            </div>
+
+            <!-- Datas -->
+            <div class="linha-inputs">
+                <div class="grupo-input">
+                    <label for="data_emprestimo">Data do Empréstimo</label>
+                    <input type="date" id="data_emprestimo" name="data_emprestimo" required>
+                </div>
+
+                <div class="grupo-input">
+                    <label for="data_limite">Data Limite de Devolução</label>
+                    <input type="date" id="data_limite" name="data_limite" required>
+                </div>
+            </div>
+
+            <!-- Observações -->
+            <div class="grupo-input">
+                <label for="observacoes">Observações (Opcional)</label>
+                <input type="text" id="observacoes" name="observacoes" placeholder="Ex: Livro com pequena rasura na capa">
+            </div>
+
+            <!-- Botões -->
+            <div style="display: flex; justify-content: center; gap: 15px; margin-top: 25px;">
+                <button type="submit" class="btn-azul" style="width: auto; padding: 12px 35px;">💾 Confirmar Empréstimo</button>
+                <a href="principal.html" class="btn-cinza" style="width: auto; padding: 12px 25px;">Voltar</a>
+            </div>
+
+        </form>
+    </div>
+
+    <script>
+        let todosLeitores = [];
+        let todosLivros = [];
+
+        // 1. Configurar datas padrão (Hoje e +7 dias)
+        const hoje = new Date();
+        const dataDevolucao = new Date();
+        dataDevolucao.setDate(hoje.getDate() + 7);
+
+        document.getElementById('data_emprestimo').value = hoje.toISOString().split('T')[0];
+        document.getElementById('data_limite').value = dataDevolucao.toISOString().split('T')[0];
+
+        // 2. Carregar leitores e livros do servidor
+        fetch('/api/leitores')
+            .then(res => res.json())
+            .then(data => todosLeitores = data)
+            .catch(err => console.error('Erro ao carregar leitores:', err));
+
+        fetch('/api/livros')
+            .then(res => res.json())
+            .then(data => {
+                // Filtra apenas livros que estão disponíveis
+                todosLivros = data.filter(l => !l.status || l.status === 'Disponível');
+            })
+            .catch(err => console.error('Erro ao carregar livros:', err));
+
+        // 3. Pesquisa Dinâmica de Alunos / Leitores
+        const inputBuscaAluno = document.getElementById('busca_aluno');
+        const hiddenMatricula = document.getElementById('matricula_aluno');
+        const listaAlunos = document.getElementById('lista_alunos');
+
+        inputBuscaAluno.addEventListener('input', () => {
+            const termo = inputBuscaAluno.value.toLowerCase().trim();
+            hiddenMatricula.value = ''; // Limpa a seleção até selecionar um item válido
+            listaAlunos.innerHTML = '';
+
+            if (!termo) {
+                listaAlunos.style.display = 'none';
+                return;
+            }
+
+            const filtrados = todosLeitores.filter(l => 
+                (l.nome && l.nome.toLowerCase().includes(termo)) ||
+                (l.matricula && l.matricula.toLowerCase().includes(termo))
+            );
+
+            if (filtrados.length === 0) {
+                listaAlunos.innerHTML = '<div class="item-sugestao" style="color: #94a3b8;">Nenhum leitor encontrado</div>';
+            } else {
+                filtrados.forEach(l => {
+                    const item = document.createElement('div');
+                    item.className = 'item-sugestao';
+                    item.innerHTML = `<strong>${l.nome}</strong> <span style="font-size: 12px; color: #64748b;">(Matrícula: ${l.matricula})</span>`;
+                    item.onclick = () => {
+                        inputBuscaAluno.value = `${l.nome} (${l.matricula})`;
+                        hiddenMatricula.value = l.matricula;
+                        listaAlunos.style.display = 'none';
+                    };
+                    listaAlunos.appendChild(item);
+                });
+            }
+            listaAlunos.style.display = 'block';
+        });
+
+        // 4. Pesquisa Dinâmica de Livros
+        const inputBuscaLivro = document.getElementById('busca_livro');
+        const hiddenCodigoLivro = document.getElementById('codigo_livro');
+        const listaLivros = document.getElementById('lista_livros');
+
+        inputBuscaLivro.addEventListener('input', () => {
+            const termo = inputBuscaLivro.value.toLowerCase().trim();
+            hiddenCodigoLivro.value = ''; // Limpa a seleção até selecionar um item válido
+            listaLivros.innerHTML = '';
+
+            if (!termo) {
+                listaLivros.style.display = 'none';
+                return;
+            }
+
+            const filtrados = todosLivros.filter(l => 
+                (l.titulo && l.titulo.toLowerCase().includes(termo)) ||
+                (l.codigo && l.codigo.toLowerCase().includes(termo))
+            );
+
+            if (filtrados.length === 0) {
+                listaLivros.innerHTML = '<div class="item-sugestao" style="color: #94a3b8;">Nenhum livro disponível encontrado</div>';
+            } else {
+                filtrados.forEach(l => {
+                    const item = document.createElement('div');
+                    item.className = 'item-sugestao';
+                    item.innerHTML = `<strong>${l.titulo}</strong> <span style="font-size: 12px; color: #64748b;">(Código: ${l.codigo})</span>`;
+                    item.onclick = () => {
+                        inputBuscaLivro.value = `${l.titulo} (${l.codigo})`;
+                        hiddenCodigoLivro.value = l.codigo;
+                        listaLivros.style.display = 'none';
+                    };
+                    listaLivros.appendChild(item);
+                });
+            }
+            listaLivros.style.display = 'block';
+        });
+
+        // Ocultar listas ao clicar fora do campo
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.container-busca')) {
+                listaAlunos.style.display = 'none';
+                listaLivros.style.display = 'none';
+            }
+        });
+
+        // Validação extra para garantir que um item válido da lista foi selecionado
+        function validarFormulario() {
+            if (!hiddenMatricula.value) {
+                alert('Por favor, selecione um leitor válido da lista de sugestões.');
+                inputBuscaAluno.focus();
+                return false;
+            }
+            if (!hiddenCodigoLivro.value) {
+                alert('Por favor, selecione um livro válido da lista de sugestões.');
+                inputBuscaLivro.focus();
+                return false;
+            }
+            return true;
+        }
+    </script>
+
+</body>
+</html>

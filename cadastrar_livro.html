@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Cadastrar Livro - Sala de Leitura</title>
+</head>
+<body class="tela-painel">
+
+    <div class="cartao cartao-formulario">
+        <h1>📘 Cadastrar Novo Livro</h1>
+        <p>Preencha as informações do livro para adicionar ao acervo.</p>
+
+        <form action="/cadastrar-livro" method="POST">
+            <div class="grupo-input">
+                <label for="titulo">Título do Livro</label>
+                <input type="text" id="titulo" name="titulo" required placeholder="Ex: Dom Casmurro">
+            </div>
+
+            <div class="grupo-input">
+                <label for="autor">Autor</label>
+                <input type="text" id="autor" name="autor" required placeholder="Ex: Machado de Assis">
+            </div>
+
+            <div class="grupo-input">
+                <label for="codigo_isbn">Código / ISBN</label>
+                <input type="text" id="codigo_isbn" name="codigo_isbn" required placeholder="Ex: ISBN-1234">
+            </div>
+
+            <div class="linha-inputs">
+                <button type="submit" class="btn-azul">Salvar Livro</button>
+                <a href="principal.html" class="btn-cinza">Voltar</a>
+            </div>
+        </form>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Registrar Devolução - Sala de Leitura</title>
+    <style>
+        .container-busca { position: relative; }
+        .lista-sugestoes {
+            position: absolute;
+            top: 100%;
+            left: 0; right: 0;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-top: none;
+            max-height: 180px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-radius: 0 0 6px 6px;
+            display: none;
+        }
+        .item-sugestao {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+        }
+        .item-sugestao:hover {
+            background-color: #eff6ff;
+            color: #1d4ed8;
+        }
+    </style>
+</head>
+<body class="tela-painel">
+
+    <div class="cartao" style="max-width: 700px; margin: 0 auto;">
+        <h1 style="font-size: 22px; margin-bottom: 20px;">↩️ Registrar Devolução de Livro</h1>
+
+        <form action="/devolver-livro" method="POST" onsubmit="return validarFormulario()">
+            
+            <!-- Campo de Pesquisa do Empréstimo Pendente -->
+            <div class="grupo-input container-busca">
+                <label for="busca_emprestimo">Buscar Livro Emprestado ou Leitor</label>
+                <input type="text" id="busca_emprestimo" placeholder="Digite o título do livro, código, nome do aluno ou matrícula..." autocomplete="off" required>
+                
+                <!-- Campos ocultos enviados ao servidor -->
+                <input type="hidden" id="id_emprestimo" name="id_emprestimo" required>
+                <input type="hidden" id="codigo_livro" name="codigo_livro" required>
+                
+                <div id="lista_emprestimos" class="lista-sugestoes"></div>
+            </div>
+
+            <!-- Resumo das Informações Selecionadas -->
+            <div id="painel-info" style="display: none; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin-bottom: 20px;">
+                <p style="margin: 4px 0;"><strong>📖 Livro:</strong> <span id="info-livro"></span></p>
+                <p style="margin: 4px 0;"><strong>👤 Leitor:</strong> <span id="info-aluno"></span></p>
+                <p style="margin: 4px 0;"><strong>📅 Data do Empréstimo:</strong> <span id="info-data"></span></p>
+            </div>
+
+            <!-- Data da Devolução -->
+            <div class="grupo-input">
+                <label for="data_devolucao">Data Real da Devolução</label>
+                <input type="date" id="data_devolucao" name="data_devolucao" required>
+            </div>
+
+            <!-- Botões -->
+            <div style="display: flex; justify-content: center; gap: 15px; margin-top: 25px;">
+                <button type="submit" class="btn-azul" style="width: auto; padding: 12px 35px;">💾 Confirmar Devolução</button>
+                <a href="principal.html" class="btn-cinza" style="width: auto; padding: 12px 25px;">Voltar</a>
+            </div>
+
+        </form>
+    </div>
+
+    <script>
+        let emprestimosAtivos = [];
+
+        // Preenche data atual no campo de devolução
+        const hoje = new Date().toISOString().split('T')[0];
+        document.getElementById('data_devolucao').value = hoje;
+
+        // Carrega empréstimos ativos da API
+        fetch('/api/emprestimos-ativos')
+            .then(res => res.json())
+            .then(data => {
+                emprestimosAtivos = data;
+            })
+            .catch(err => console.error('Erro ao carregar empréstimos ativos:', err));
+
+        const inputBusca = document.getElementById('busca_emprestimo');
+        const hiddenIdEmprestimo = document.getElementById('id_emprestimo');
+        const hiddenCodigoLivro = document.getElementById('codigo_livro');
+        const lista = document.getElementById('lista_emprestimos');
+        const painelInfo = document.getElementById('painel-info');
+
+        inputBusca.addEventListener('input', () => {
+            const termo = inputBusca.value.toLowerCase().trim();
+            hiddenIdEmprestimo.value = '';
+            hiddenCodigoLivro.value = '';
+            painelInfo.style.display = 'none';
+            lista.innerHTML = '';
+
+            if (!termo) {
+                lista.style.display = 'none';
+                return;
+            }
+
+            const filtrados = emprestimosAtivos.filter(e => 
+                (e.titulo_livro && e.titulo_livro.toLowerCase().includes(termo)) ||
+                (e.codigo_livro && e.codigo_livro.toLowerCase().includes(termo)) ||
+                (e.nome_aluno && e.nome_aluno.toLowerCase().includes(termo)) ||
+                (e.matricula && e.matricula.toLowerCase().includes(termo))
+            );
+
+            if (filtrados.length === 0) {
+                lista.innerHTML = '<div class="item-sugestao" style="color: #94a3b8;">Nenhum empréstimo pendente encontrado</div>';
+            } else {
+                filtrados.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'item-sugestao';
+                    div.innerHTML = `<strong>${item.titulo_livro}</strong> - ${item.nome_aluno} <span style="font-size: 12px; color: #64748b;">(Cód: ${item.codigo_livro})</span>`;
+                    div.onclick = () => {
+                        inputBusca.value = `${item.titulo_livro} (Devolvido por: ${item.nome_aluno})`;
+                        hiddenIdEmprestimo.value = item.id;
+                        hiddenCodigoLivro.value = item.codigo_livro;
+                        lista.style.display = 'none';
+
+                        const dtParts = item.data_emprestimo ? item.data_emprestimo.split('-') : [];
+                        const dataFormatada = dtParts.length === 3 ? `${dtParts[2]}/${dtParts[1]}/${dtParts[0]}` : item.data_emprestimo;
+
+                        document.getElementById('info-livro').textContent = `${item.titulo_livro} (${item.codigo_livro})`;
+                        document.getElementById('info-aluno').textContent = `${item.nome_aluno} (Matrícula: ${item.matricula})`;
+                        document.getElementById('info-data').textContent = dataFormatada;
+                        painelInfo.style.display = 'block';
+                    };
+                    lista.appendChild(div);
+                });
+            }
+            lista.style.display = 'block';
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.container-busca')) {
+                lista.style.display = 'none';
+            }
+        });
+
+        function validarFormulario() {
+            if (!hiddenIdEmprestimo.value || !hiddenCodigoLivro.value) {
+                alert('Por favor, selecione um empréstimo válido da lista de sugestões.');
+                inputBusca.focus();
+                return false;
+            }
+            return true;
+        }
+    </script>
+
+</body>
+</html>

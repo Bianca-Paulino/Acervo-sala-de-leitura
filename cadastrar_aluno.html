@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Cadastrar Aluno - Sala de Leitura</title>
+</head>
+<body class="tela-painel">
+
+    <!-- Caixa Superior: Formulário de Cadastro / Edição -->
+    <div class="cartao" style="margin-bottom: 20px;">
+        
+        <h1 id="titulo-form" style="font-size: 22px; margin-bottom: 25px;">Cadastrar Novo Leitor</h1>
+
+        <form id="form-leitor" action="/cadastrar-aluno" method="POST">
+            <!-- Campo oculto para armazenar o ID ao editar -->
+            <input type="hidden" id="id-leitor" name="id">
+
+            <div class="linha-inputs">
+                <div class="grupo-input">
+                    <label for="nome">Nome Completo</label>
+                    <input type="text" id="nome" name="nome" placeholder="Insira o nome completo" required>
+                </div>
+                <div class="grupo-input">
+                    <label for="turma">Série/Turma</label>
+                    <input type="text" id="turma" name="turma" placeholder="Ex: 9º Ano A">
+                </div>
+            </div>
+
+            <div class="linha-inputs">
+                <div class="grupo-input">
+                    <label for="matricula">Matrícula/RA</label>
+                    <input type="text" id="matricula" name="matricula" placeholder="Número de matrícula" required>
+                </div>
+                <div class="grupo-input">
+                    <label for="telefone">Telefone</label>
+                    <input type="text" id="telefone" name="telefone" placeholder="(99) 99999-9999" maxlength="15">
+                </div>
+            </div>
+
+            <div class="linha-inputs">
+                <div class="grupo-input" style="max-width: 50%;">
+                    <label for="tipo">Tipo de Usuário</label>
+                    <select id="tipo" name="tipo" required>
+                        <option value="">Selecione o tipo</option>
+                        <option value="Aluno">Aluno</option>
+                        <option value="Professor">Professor</option>
+                        <option value="Funcionário">Funcionário</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
+                <button type="submit" id="btn-salvar" class="btn-azul" style="width: auto; padding: 12px 40px;">💾 Salvar Leitor</button>
+                <button type="button" id="btn-cancelar" onclick="limparEdicao()" class="btn-cinza" style="width: auto; padding: 12px 20px; display: none;">Cancelar</button>
+                <a href="principal.html" class="btn-cinza" style="width: auto; padding: 12px 30px;">Voltar</a>
+            </div>
+
+        </form>
+    </div>
+
+    <!-- Caixa Inferior: Lista de Leitores -->
+    <div class="cartao">
+        <h1 style="font-size: 20px; margin-bottom: 15px;">Lista de Leitores</h1>
+        
+        <div class="tabela-container" style="box-shadow: none; padding: 0; margin-top: 0;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Matrícula</th>
+                        <th>Nome Completo</th>
+                        <th>Tipo</th>
+                        <th>Série</th>
+                        <th>Telefone</th>
+                        <th style="text-align: center;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-leitores">
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 30px; color: #999;">Carregando leitores...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let listaLeitoresGlobal = [];
+
+        // 1. Máscara Automática de Telefone
+        const inputTelefone = document.getElementById('telefone');
+        inputTelefone.addEventListener('input', (e) => {
+            let num = e.target.value.replace(/\D/g, '');
+            if (num.length > 11) num = num.slice(0, 11);
+
+            if (num.length > 10) {
+                num = num.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+            } else if (num.length > 6) {
+                num = num.replace(/^(\d{2})(\d{4,5})(\d{0,4})$/, '($1) $2-$3');
+            } else if (num.length > 2) {
+                num = num.replace(/^(\d{2})(\d{0,5})$/, '($1) $2');
+            } else if (num.length > 0) {
+                num = num.replace(/^(\d*)$/, '($1');
+            }
+            e.target.value = num;
+        });
+
+        // 2. Carregar Leitores do Banco de Dados
+        function carregarLeitores() {
+            fetch('/api/leitores')
+                .then(res => res.json())
+                .then(leitores => {
+                    listaLeitoresGlobal = leitores;
+                    const tbody = document.getElementById('tabela-leitores');
+                    tbody.innerHTML = '';
+
+                    if (!leitores || leitores.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: #999;">Nenhum leitor encontrado.</td></tr>';
+                        return;
+                    }
+
+                    leitores.forEach(l => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${l.matricula || '-'}</td>
+                            <td>${l.nome || '-'}</td>
+                            <td>${l.tipo || '-'}</td>
+                            <td>${l.turma || '-'}</td>
+                            <td>${l.telefone || '-'}</td>
+                            <td style="text-align: center;">
+                                <button type="button" onclick="preencherEdicao('${l.id}')" style="background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px;">✏️ Editar</button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                })
+                .catch(err => console.error('Erro ao carregar leitores:', err));
+        }
+
+        // 3. Preencher Formulário para Edição
+        function preencherEdicao(id) {
+            const leitor = listaLeitoresGlobal.find(l => String(l.id) === String(id));
+            if (!leitor) return;
+
+            document.getElementById('id-leitor').value = leitor.id;
+            document.getElementById('nome').value = leitor.nome || '';
+            document.getElementById('turma').value = leitor.turma || '';
+            document.getElementById('matricula').value = leitor.matricula || '';
+            document.getElementById('telefone').value = leitor.telefone || '';
+            document.getElementById('tipo').value = leitor.tipo || '';
+
+            // Altera ação do formulário e textos dos botões
+            document.getElementById('form-leitor').action = '/editar-aluno';
+            document.getElementById('titulo-form').textContent = '✏️ Editar Leitor';
+            document.getElementById('btn-salvar').textContent = '💾 Atualizar Leitor';
+            document.getElementById('btn-cancelar').style.display = 'inline-block';
+
+            // Rola a página para o formulário
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 4. Cancelar Modo de Edição
+        function limparEdicao() {
+            document.getElementById('id-leitor').value = '';
+            document.getElementById('form-leitor').reset();
+            document.getElementById('form-leitor').action = '/cadastrar-aluno';
+            document.getElementById('titulo-form').textContent = 'Cadastrar Novo Leitor';
+            document.getElementById('btn-salvar').textContent = '💾 Salvar Leitor';
+            document.getElementById('btn-cancelar').style.display = 'none';
+        }
+
+        // Executa ao abrir a página
+        carregarLeitores();
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Recuperar Senha - Sala de Leitura</title>
+</head>
+<body class="tela-centralizada">
+
+    <div style="width: 100%; max-width: 450px;">
+        
+        <h1 style="font-size: 24px; margin-bottom: 20px; color: #111; text-align: center;">Recuperar Senha do Sistema</h1>
+        
+        <div class="cartao">
+            
+            <p style="font-size: 14px; color: #64748b; margin-top: 0; margin-bottom: 20px;">
+                Confirme seu usuário e nome completo para redefinir sua senha.
+            </p>
+
+            <form action="/recuperar-senha" method="POST" onsubmit="return validarNovasSenhas()">
+                
+                <div class="grupo-input">
+                    <label for="usuario">Usuário Cadastrado</label>
+                    <input type="text" id="usuario" name="usuario" placeholder="Ex: admin" required autocomplete="off">
+                </div>
+
+                <div class="grupo-input">
+                    <label for="nome_completo">Nome Completo (Confirmação)</label>
+                    <input type="text" id="nome_completo" name="nome_completo" placeholder="Ex: Administrador" required>
+                </div>
+
+                <div class="grupo-input">
+                    <label for="nova_senha">Nova Senha</label>
+                    <input type="password" id="nova_senha" name="nova_senha" placeholder="Digite a nova senha..." required>
+                </div>
+
+                <div class="grupo-input">
+                    <label for="confirmar_nova_senha">Confirmar Nova Senha</label>
+                    <input type="password" id="confirmar_nova_senha" placeholder="Repita a nova senha..." required>
+                </div>
+
+                <!-- Alerta de Erro de Validação -->
+                <div id="alerta-erro" style="display: none; color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; padding: 10px; border-radius: 6px; font-size: 13px; margin-bottom: 15px; text-align: center;">
+                    ⚠️ Usuário ou Nome Completo não conferem!
+                </div>
+
+                <!-- Botões -->
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px;">
+                    <a href="index.html" style="padding: 10px 20px; border: 1px solid #ccc; border-radius: 25px; text-decoration: none; color: #555; font-weight: bold; font-size: 14px;">Cancelar</a>
+                    <button type="submit" class="btn-azul" style="width: auto; padding: 10px 25px;">Redefinir Senha</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('erro')) {
+            document.getElementById('alerta-erro').style.display = 'block';
+        }
+
+        function validarNovasSenhas() {
+            const novaSenha = document.getElementById('nova_senha').value;
+            const confirmarSenha = document.getElementById('confirmar_nova_senha').value;
+
+            if (novaSenha !== confirmarSenha) {
+                alert('As senhas digitadas não coincidem. Por favor, verifique e tente novamente.');
+                return false;
+            }
+            return true;
+        }
+    </script>
+
+</body>
+</html>
